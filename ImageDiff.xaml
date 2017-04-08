@@ -1,0 +1,54 @@
+﻿<UserControl x:Class="imgdiff.ImageDiff"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:imgdiff"
+             mc:Ignorable="d" 
+             d:DesignHeight="720" d:DesignWidth="1280">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <DockPanel Grid.Row="0">
+            <ToolBarTray DockPanel.Dock="Bottom">
+                <ToolBar HorizontalAlignment="Right">
+                    <Button Content="+" ToolTip="Zoom In"/>
+                    <Button Content="-" ToolTip="Zoom Out"/>
+                    <Button HorizontalAlignment="Right" Content="*" ToolTip="Fit to screen"/>
+                    <Separator/>
+                    <TextBlock Text="xxx"/>
+                    <Slider Orientation="Horizontal" Width="128" Minimum="1" Maximum="255"/>
+                    <Separator/>
+                    <TextBlock Text="[X, Y]"/>
+                    <Separator/>
+                    <TextBlock Text="R=?, G=? B = ?"/>
+                </ToolBar>
+            </ToolBarTray>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto">
+                <Image x:Name="mainImage" Source="blank.png" Width="1920" Height="1280" Stretch="UniformToFill"/>
+            </ScrollViewer>
+        </DockPanel>
+        <GridSplitter Grid.Row="1" ResizeBehavior="PreviousAndNext" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Gray" Foreground="Gray" Height="4"/>
+        <Grid Row ="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="4"/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="4"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="0">
+                <Image x:Name="leftThumbnail" Source="blank.png"/>
+            </Button>
+            <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="2">
+                <Image x:Name="diffThumbnail" Source="blank.png"/>
+            </Button>
+            <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="4">
+                <Image x:Name="rightThumbnail" Source="blank.png"/>
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>
