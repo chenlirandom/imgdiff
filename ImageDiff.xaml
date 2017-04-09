@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:imgdiff"
              mc:Ignorable="d" 
-             d:DesignHeight="720" d:DesignWidth="1280">
+             d:DesignHeight="720" d:DesignWidth="1280" FontFamily="Consolas">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -15,39 +15,37 @@
         <DockPanel Grid.Row="0">
             <ToolBarTray DockPanel.Dock="Bottom">
                 <ToolBar HorizontalAlignment="Right">
-                    <Button Content="+" ToolTip="Zoom In"/>
-                    <Button Content="-" ToolTip="Zoom Out"/>
-                    <Button HorizontalAlignment="Right" Content="*" ToolTip="Fit to screen"/>
-                    <Separator/>
-                    <TextBlock Text="xxx"/>
-                    <Slider Orientation="Horizontal" Width="128" Minimum="1" Maximum="255"/>
-                    <Separator/>
-                    <TextBlock Text="[X, Y]"/>
-                    <Separator/>
-                    <TextBlock Text="R=?, G=? B = ?"/>
+                    <TextBlock Text="xxx" x:Name="toleranceTextBlock"/>
+                    <Slider Orientation="Horizontal" x:Name="toleranceSlider" Width="128" Minimum="0" Maximum="255" ValueChanged="Slider_ValueChanged"/>
+                    <TextBlock Text="[X, Y]" x:Name="cursorPositionTextBlock"/>
                 </ToolBar>
             </ToolBarTray>
-            <ScrollViewer HorizontalScrollBarVisibility="Auto">
-                <Image x:Name="mainImage" Source="blank.png" Width="1920" Height="1280" Stretch="UniformToFill"/>
-            </ScrollViewer>
+            <Image x:Name="mainImage" Source="blank.png" Stretch="Uniform"/>
         </DockPanel>
         <GridSplitter Grid.Row="1" ResizeBehavior="PreviousAndNext" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Gray" Foreground="Gray" Height="4"/>
         <Grid Row ="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
-                <ColumnDefinition Width="4"/>
                 <ColumnDefinition/>
-                <ColumnDefinition Width="4"/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="0">
-                <Image x:Name="leftThumbnail" Source="blank.png"/>
+            <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="0" Click="Button_Click" x:Name="leftButton" BorderThickness="4">
+                <StackPanel>
+                    <TextBlock x:Name="leftPixelValueText" HorizontalAlignment="Center"/>
+                    <Image x:Name="leftThumbnail" Source="blank.png"/>
+                </StackPanel>
             </Button>
-            <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="2">
-                <Image x:Name="diffThumbnail" Source="blank.png"/>
+            <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="1" Click="Button_Click" x:Name="diffButton" BorderThickness="4">
+                <StackPanel>
+                    <TextBlock x:Name="diffPixelValueText" HorizontalAlignment="Center"/>
+                    <Image x:Name="diffThumbnail" Source="blank.png"/>
+                </StackPanel>
             </Button>
-            <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="4">
-                <Image x:Name="rightThumbnail" Source="blank.png"/>
+            <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="2" Click="Button_Click" x:Name="rightButton" BorderThickness="4">
+                <StackPanel>
+                    <TextBlock x:Name="rightPixelValueText" HorizontalAlignment="Center"/>
+                    <Image x:Name="rightThumbnail" Source="blank.png"/>
+                </StackPanel>
             </Button>
         </Grid>
     </Grid>

@@ -21,88 +21,117 @@ namespace imgdiff
     /// </summary>
     public partial class ImageDiff : UserControl
     {
-        struct Bgra32Pixel
+        class Bgra32Image
         {
-            public byte B;
-            public byte G;
-            public byte R;
-            public byte A;
-            public static Bgra32Pixel GetDiff(Bgra32Pixel a, Bgra32Pixel b, int tolerance)
-            {
-                var diff = new Bgra32Pixel
-                {
-                    B = (byte)Math.Abs(a.B - b.B),
-                    G = (byte)Math.Abs(a.G - b.G),
-                    R = (byte)Math.Abs(a.R - b.R),
-                    A = (byte)Math.Abs(a.A - b.A),
-                };
-                if (diff.B <= tolerance) diff.B = 0;
-                if (diff.G <= tolerance) diff.G = 0;
-                if (diff.R <= tolerance) diff.R = 0;
-                if (diff.A <= tolerance) diff.A = 0;
-                return diff;
-            }
-        };
-
-        class Image2D
-        {
-            public Bgra32Pixel[] Pixels { get; private set; }
+            public ImageSource ImageSource { get; private set; }
+            public uint[] Pixels { get; private set; }
             public int W { get; private set; }
             public int H { get; private set; }
 
-            public Image2D(int w, int h)
+            public Bgra32Image(BitmapSource source, int w, int h)
             {
-                if (w <= 0) w = 1;
-                if (h <= 0) h = 1;
-                this.Pixels = new Bgra32Pixel[w * h];
+                Debug.Assert(null == source || (source.PixelWidth <= w && source.PixelHeight <= h));
+                this.Pixels = new uint[w * h];
                 this.W = w;
                 this.H = h;
-            }
-
-            public void Resize(int width, int height)
-            {
-                if (width <= 0) width = 1;
-                if (height <= 0) height = 1;
-                if (width == this.W && height == this.H) return;
-
-                var buffer = new Bgra32Pixel[width * height];
-
-                int minW = Math.Min(this.W, width);
-                int minH = Math.Min(this.H, height);
-                for (int y = 0; y < minH; ++y)
+                if (null != source)
                 {
-                    for (int x = 0; x < minW; ++x)
-                    {
-                        int src = y * this.W + x;
-                        int dst = y * width + x;
-                        buffer[dst] = this.Pixels[src];
-                    }
+                    source.CopyPixels(this.Pixels, w*4, 0);
+                    var bmp = new WriteableBitmap(this.W, this.H, 96, 96, PixelFormats.Bgra32, null);
+                    bmp.WritePixels(new Int32Rect(0, 0, this.W, this.H), this.Pixels, this.W * 4, 0);
+                    this.ImageSource = bmp;
                 }
-                this.Pixels = buffer;
-                this.W = width;
-                this.H = height;
             }
 
-            public static Image2D CreateDiff(Image2D a, Image2D b, int tolerance)
+            public void RefreshDiff(Bgra32Image a, Bgra32Image b, int tolerance)
             {
                 Debug.Assert(a.W == b.W && a.H == b.H);
+                Debug.Assert(a.W == this.W && a.H == this.H);
                 if (tolerance < 0) tolerance = 0;
                 if (tolerance > 255) tolerance = 255;
-                var diff = new Image2D(a.W, a.H);
-                for(int i = 0; i < a.Pixels.Length; ++i)
+                var buffer = new uint[a.Pixels.Length];
+                for (int i = 0; i < a.Pixels.Length; ++i)
                 {
-                    diff.Pixels[i] = Bgra32Pixel.GetDiff(a.Pixels[i], b.Pixels[i], tolerance);
+                    uint actualDiff, diffColor;
+                    GetDiff(out actualDiff, out diffColor, a.Pixels[i], b.Pixels[i], tolerance);
+                    this.Pixels[i] = actualDiff;
+                    buffer[i] = diffColor;
                 }
+                Debug.Assert(this.ImageSource is WriteableBitmap);
+                (this.ImageSource as WriteableBitmap).WritePixels(new Int32Rect(0, 0, this.W, this.H), buffer, this.W * 4, 0);
+            }
+
+            public string GetPixelValueText(int x, int y)
+            {
+                if (x < 0 || x >= this.W || y < 0 || y >= this.H)
+                {
+                    return "out of range";
+                }
+                else
+                {
+                    uint pixel = this.Pixels[y * this.W + x];
+                    return string.Format("R={0,-3} G={1,-3} B={2,-3}", R(pixel), G(pixel), B(pixel));
+                }
+            }
+
+            public static Bgra32Image CreateDiff(Bgra32Image a, Bgra32Image b, int tolerance)
+            {
+                Debug.Assert(a.W == b.W && a.H == b.H);
+                var diff = new Bgra32Image(null, a.W, a.H);
+                diff.ImageSource = new WriteableBitmap(a.W, a.H, 96, 96, PixelFormats.Bgra32, null);
+                diff.RefreshDiff(a, b, tolerance);
                 return diff;
             }
+
+            static uint R(uint pixel) { return (pixel >> 16) & 0xFF; }
+            static uint G(uint pixel) { return (pixel >> 8) & 0xFF; }
+            static uint B(uint pixel) { return pixel & 0xFF; }
+            static uint Abs(uint a, uint b) { return a > b ? (a - b) : (b - a); }
+
+            static void GetDiff(out uint actualDiff, out uint diffColor, uint a, uint b, int tolerance)
+            {
+                actualDiff = 0xFF000000;
+                diffColor = 0xFF000000;
+
+                uint diffB = Abs(B(a), B(b));
+                if (diffB > tolerance)
+                {
+                    diffColor |= 0xFF;
+                }
+                actualDiff |= diffB;
+
+                uint diffG = Abs(G(a), G(b));
+                if (diffG > tolerance)
+                {
+                    diffColor |= 0xFF00;
+                }
+                actualDiff |= diffG << 8;
+
+                uint diffR = Abs(R(a), R(b));
+                if (diffR > tolerance)
+                {
+                    diffColor |= 0xFF0000;
+                }
+                actualDiff |= diffR << 16;
+            }
         };
+
+        enum MainImageType
+        {
+            LEFT, DIFF, RIGHT,
+        };
+
+        Bgra32Image leftImage, rightImage, diffImage;
+        int tolerance = -1;
+        MainImageType mainImageType;
 
         public ImageDiff()
         {
             InitializeComponent();
+            this.mainImage.MouseMove += (s, e) => { UpdatePixelUnderCursor(); };
         }
 
-        public void SetImages(BitmapSource leftImage, BitmapSource rightImage, int tolerance)
+        public void SetImages(BitmapSource left, BitmapSource right, int tolerance)
         {
             // check tolerance
             if (tolerance < 0 || tolerance > 255)
@@ -112,25 +141,95 @@ namespace imgdiff
             }
 
             // Load images
-            var image1 = GetImage2D(leftImage);
-            var image2 = GetImage2D(rightImage);
+            int w = Math.Max(left.PixelWidth, right.PixelWidth);
+            int h = Math.Max(left.PixelHeight, right.PixelHeight);
+            var image1 = GetImage2D(left, w, h);
+            var image2 = GetImage2D(right, w, h);
             if (null == image1 || null == image2) return;
 
-            // create diff
-            int w = Math.Max(image1.W, image2.W);
-            int h = Math.Max(image1.H, image2.H);
-            image1.Resize(w, h);
-            image2.Resize(w, h);
-            var diff = Image2D.CreateDiff(image1, image2, tolerance);
+            // done
+            this.leftImage = image1;
+            this.rightImage = image2;
+            RefreshDiffImage(tolerance);
+            this.leftThumbnail.Source = this.leftImage.ImageSource;
+            this.rightThumbnail.Source = this.rightImage.ImageSource;
+            SwitchMainImage(MainImageType.DIFF);
         }
 
-        Image2D GetImage2D(BitmapSource source)
+        bool updatingSlider = false;
+
+        void RefreshDiffImage(int tolerance)
+        {
+            if (null == this.leftImage || null == this.rightImage) return;
+            if (tolerance == this.tolerance) return;
+            if (null == this.diffImage)
+            {
+                this.diffImage = Bgra32Image.CreateDiff(this.leftImage, this.rightImage, tolerance);
+            }
+            else
+            {
+                this.diffImage.RefreshDiff(this.leftImage, this.rightImage, tolerance);
+            }
+            this.diffThumbnail.Source = this.diffImage.ImageSource;
+            this.tolerance = tolerance;
+            this.toleranceTextBlock.Text = string.Format("{0,-3}", tolerance);
+            try
+            {
+                this.updatingSlider = true;
+                this.toleranceSlider.Value = tolerance;
+            }
+            finally
+            {
+                this.updatingSlider = false;
+            }
+        }
+
+        void SwitchMainImage(MainImageType type)
+        {
+            var selected = Brushes.Red;
+            var unselected = Brushes.DarkGray;
+            switch(type)
+            {
+                case MainImageType.LEFT:
+                    this.mainImage.Source = this.leftImage.ImageSource;
+                    this.leftButton.BorderBrush = selected;
+                    this.rightButton.BorderBrush = unselected;
+                    this.diffButton.BorderBrush = unselected;
+                    break;
+
+                case MainImageType.RIGHT:
+                    this.mainImage.Source = this.rightImage.ImageSource;
+                    this.leftButton.BorderBrush = unselected;
+                    this.rightButton.BorderBrush = selected;
+                    this.diffButton.BorderBrush = unselected;
+                    break;
+
+                default:
+                    this.mainImage.Source = this.diffImage.ImageSource;
+                    this.leftButton.BorderBrush = unselected;
+                    this.rightButton.BorderBrush = unselected;
+                    this.diffButton.BorderBrush = selected;
+                    break;
+            }
+            this.mainImageType = type;
+        }
+
+        void UpdatePixelUnderCursor()
+        {
+            var pos = Mouse.GetPosition(this.mainImage);
+            int x = (this.mainImage.ActualWidth <= 0) ? 0 : (int)(pos.X * this.mainImage.Source.Width / this.mainImage.ActualWidth);
+            int y = (this.mainImage.ActualHeight <= 0) ? 0 : (int)(pos.Y * this.mainImage.Source.Height / this.mainImage.ActualHeight);
+            this.leftPixelValueText.Text = this.leftImage.GetPixelValueText(x, y);
+            this.rightPixelValueText.Text = this.rightImage.GetPixelValueText(x, y);
+            this.diffPixelValueText.Text = this.diffImage.GetPixelValueText(x, y);
+            this.cursorPositionTextBlock.Text = string.Format("[{0,-3}, {1,-3}]", x, y);
+        }
+
+        Bgra32Image GetImage2D(BitmapSource source, int w, int h)
         {
             source = ConvertToBGRA32(source);
             if (null == source) return null;
-            var image = new Image2D(source.PixelWidth, source.PixelHeight);
-            source.CopyPixels(image.Pixels, source.PixelWidth, 0);
-            return image;
+            return new Bgra32Image(source, w, h);
         }
 
         BitmapSource ConvertToBGRA32(BitmapSource source)
@@ -164,6 +263,32 @@ namespace imgdiff
         void ErrorLogLine(string message)
         {
             (Application.Current.MainWindow as MainWindow).ErrorLogLine(message);
+        }
+
+        void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (!this.updatingSlider)
+            {
+                RefreshDiffImage((int)e.NewValue);
+            }
+        }
+
+        void Button_Click(object sender, RoutedEventArgs e)
+        {
+            MainImageType type;
+            if (sender == this.leftButton)
+            {
+                type = MainImageType.LEFT;
+            }
+            else if (sender == this.rightButton)
+            {
+                type = MainImageType.RIGHT;
+            }
+            else
+            {
+                type = MainImageType.DIFF;
+            }
+            SwitchMainImage(type);
         }
     }
 }

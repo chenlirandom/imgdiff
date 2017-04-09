@@ -12,7 +12,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace imgdiff
 {
@@ -21,7 +20,7 @@ namespace imgdiff
     /// </summary>
     public partial class MainWindow : Window
     {
-        int tolerance = 1;
+        int tolerance = 10;
         string leftFile = null;
         string rightFile = null;
 
@@ -56,9 +55,14 @@ namespace imgdiff
 
         BitmapImage OpenImageFile(string leftFile)
         {
+            if (!File.Exists(leftFile))
+            {
+                ErrorLogLine(string.Format("File not found: {0}", leftFile));
+                return null;
+            }
             try
             {
-                return new BitmapImage(new Uri(leftFile));
+                return new BitmapImage(new Uri(Path.GetFullPath(leftFile)));
             }
             catch(Exception ex)
             {
@@ -137,7 +141,7 @@ namespace imgdiff
 Usage: [options] <left> <right>
 
 Options:
-    -t [0-255]  Set image diff tolerance. Default is 1.
+    -t [0-255]  Set image diff tolerance. Default is 10.
 ";
             ErrorLogLine(usage);
         }
