@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="350" Width="525">
     <Grid Margin="8">
-        <l:ImageDiff/>
+        <TextBlock x:Name="logText"/>
+        <l:ImageDiff x:Name="imageDiff"/>
     </Grid>
 </Window>
