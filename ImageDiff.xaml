@@ -16,7 +16,7 @@
             <ToolBarTray DockPanel.Dock="Bottom">
                 <ToolBar HorizontalAlignment="Right">
                     <TextBlock Text="xxx" x:Name="toleranceTextBlock"/>
-                    <Slider Orientation="Horizontal" x:Name="toleranceSlider" Width="128" Minimum="0" Maximum="255" ValueChanged="Slider_ValueChanged"/>
+                    <Slider Orientation="Horizontal" x:Name="toleranceSlider" Width="128" Minimum="0" Maximum="255" ValueChanged="Slider_ValueChanged" IsMoveToPointEnabled="True"/>
                     <TextBlock Text="[X, Y]" x:Name="cursorPositionTextBlock"/>
                 </ToolBar>
             </ToolBarTray>
@@ -30,22 +30,34 @@
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
             <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="0" Click="Button_Click" x:Name="leftButton" BorderThickness="4">
-                <StackPanel>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
                     <TextBlock x:Name="leftPixelValueText" HorizontalAlignment="Center"/>
-                    <Image x:Name="leftThumbnail" Source="blank.png"/>
-                </StackPanel>
+                    <Image x:Name="leftThumbnail" Source="blank.png" Stretch="Uniform" Grid.Row="1"/>
+                </Grid>
             </Button>
             <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="1" Click="Button_Click" x:Name="diffButton" BorderThickness="4">
-                <StackPanel>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
                     <TextBlock x:Name="diffPixelValueText" HorizontalAlignment="Center"/>
-                    <Image x:Name="diffThumbnail" Source="blank.png"/>
-                </StackPanel>
+                    <Image x:Name="diffThumbnail" Source="blank.png" Stretch="Uniform" Grid.Row="1"/>
+                </Grid>
             </Button>
             <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="2" Click="Button_Click" x:Name="rightButton" BorderThickness="4">
-                <StackPanel>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
                     <TextBlock x:Name="rightPixelValueText" HorizontalAlignment="Center"/>
-                    <Image x:Name="rightThumbnail" Source="blank.png"/>
-                </StackPanel>
+                    <Image x:Name="rightThumbnail" Source="blank.png" Stretch="Uniform" Grid.Row="1"/>
+                </Grid>
             </Button>
         </Grid>
     </Grid>

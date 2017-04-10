@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,6 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace imgdiff
 {
@@ -23,10 +25,14 @@ namespace imgdiff
     {
         class Bgra32Image
         {
+            Task genDiffTask;
+
             public ImageSource ImageSource { get; private set; }
             public uint[] Pixels { get; private set; }
             public int W { get; private set; }
             public int H { get; private set; }
+
+            public event EventHandler<int> GenDiffComplete;
 
             public Bgra32Image(BitmapSource source, int w, int h)
             {
@@ -34,31 +40,55 @@ namespace imgdiff
                 this.Pixels = new uint[w * h];
                 this.W = w;
                 this.H = h;
+                var bmp = new WriteableBitmap(this.W, this.H, 96, 96, PixelFormats.Bgra32, null);
+                this.ImageSource = bmp;
                 if (null != source)
                 {
                     source.CopyPixels(this.Pixels, w*4, 0);
-                    var bmp = new WriteableBitmap(this.W, this.H, 96, 96, PixelFormats.Bgra32, null);
                     bmp.WritePixels(new Int32Rect(0, 0, this.W, this.H), this.Pixels, this.W * 4, 0);
-                    this.ImageSource = bmp;
                 }
             }
 
-            public void RefreshDiff(Bgra32Image a, Bgra32Image b, int tolerance)
+            public void RefreshDiffAsync(Bgra32Image a, Bgra32Image b, int tolerance)
             {
+                // do some basic check
                 Debug.Assert(a.W == b.W && a.H == b.H);
                 Debug.Assert(a.W == this.W && a.H == this.H);
                 if (tolerance < 0) tolerance = 0;
                 if (tolerance > 255) tolerance = 255;
-                var buffer = new uint[a.Pixels.Length];
-                for (int i = 0; i < a.Pixels.Length; ++i)
+
+                // create a new diff task
+                Task task = null;
+                task = new Task((object state) =>
                 {
-                    uint actualDiff, diffColor;
-                    GetDiff(out actualDiff, out diffColor, a.Pixels[i], b.Pixels[i], tolerance);
-                    this.Pixels[i] = actualDiff;
-                    buffer[i] = diffColor;
-                }
-                Debug.Assert(this.ImageSource is WriteableBitmap);
-                (this.ImageSource as WriteableBitmap).WritePixels(new Int32Rect(0, 0, this.W, this.H), buffer, this.W * 4, 0);
+                    uint[] diff   = new uint[this.Pixels.Length];
+                    uint[] color = new uint[this.Pixels.Length];
+                    int taskTolerance = (int)state;
+                    for (int i = 0; i < a.Pixels.Length; ++i)
+                    {
+                        if (task != this.genDiffTask)
+                        {
+                            return;
+                        }
+                        uint actualDiff, diffColor;
+                        GetDiff(out actualDiff, out diffColor, a.Pixels[i], b.Pixels[i], taskTolerance);
+                        diff[i] = actualDiff;
+                        color[i] = diffColor;
+                    }
+                    Application.Current.Dispatcher.BeginInvoke((Action)(() => 
+                    {
+                        if (this.genDiffTask == task)
+                        {
+                            // Update member variables, trigger events, when the task is done.
+                            this.Pixels = diff;
+                            Debug.Assert(this.ImageSource is WriteableBitmap);
+                            (this.ImageSource as WriteableBitmap).WritePixels(new Int32Rect(0, 0, this.W, this.H), color, this.W * 4, 0);
+                            this.GenDiffComplete(this, taskTolerance);
+                        }
+                    }));
+                }, tolerance);
+                this.genDiffTask = task;
+                task.Start();
             }
 
             public string GetPixelValueText(int x, int y)
@@ -78,8 +108,7 @@ namespace imgdiff
             {
                 Debug.Assert(a.W == b.W && a.H == b.H);
                 var diff = new Bgra32Image(null, a.W, a.H);
-                diff.ImageSource = new WriteableBitmap(a.W, a.H, 96, 96, PixelFormats.Bgra32, null);
-                diff.RefreshDiff(a, b, tolerance);
+                diff.RefreshDiffAsync(a, b, tolerance);
                 return diff;
             }
 
@@ -129,6 +158,7 @@ namespace imgdiff
         {
             InitializeComponent();
             this.mainImage.MouseMove += (s, e) => { UpdatePixelUnderCursor(); };
+            this.Unloaded += (s, e) => { if (null != this.diffImage) this.diffImage.GenDiffComplete -= DiffImage_GenDiffComplete; };
         }
 
         public void SetImages(BitmapSource left, BitmapSource right, int tolerance)
@@ -145,34 +175,33 @@ namespace imgdiff
             int h = Math.Max(left.PixelHeight, right.PixelHeight);
             var image1 = GetImage2D(left, w, h);
             var image2 = GetImage2D(right, w, h);
+            var imaged = new Bgra32Image(null, w, h);
             if (null == image1 || null == image2) return;
 
             // done
             this.leftImage = image1;
             this.rightImage = image2;
-            RefreshDiffImage(tolerance);
+            if (null != this.diffImage) this.diffImage.GenDiffComplete -= DiffImage_GenDiffComplete;
+            this.diffImage = new Bgra32Image(null, w, h);
+            if (null != this.diffImage) this.diffImage.GenDiffComplete += DiffImage_GenDiffComplete;
             this.leftThumbnail.Source = this.leftImage.ImageSource;
             this.rightThumbnail.Source = this.rightImage.ImageSource;
             SwitchMainImage(MainImageType.DIFF);
+            RefreshDiffImage(tolerance);
         }
-
-        bool updatingSlider = false;
 
         void RefreshDiffImage(int tolerance)
         {
             if (null == this.leftImage || null == this.rightImage) return;
             if (tolerance == this.tolerance) return;
-            if (null == this.diffImage)
-            {
-                this.diffImage = Bgra32Image.CreateDiff(this.leftImage, this.rightImage, tolerance);
-            }
-            else
-            {
-                this.diffImage.RefreshDiff(this.leftImage, this.rightImage, tolerance);
-            }
-            this.diffThumbnail.Source = this.diffImage.ImageSource;
             this.tolerance = tolerance;
             this.toleranceTextBlock.Text = string.Format("{0,-3}", tolerance);
+            this.diffImage.RefreshDiffAsync(this.leftImage, this.rightImage, tolerance);
+        }
+
+        bool updatingSlider = false;
+        void DiffImage_GenDiffComplete(object sender, int tolerance)
+        {
             try
             {
                 this.updatingSlider = true;
