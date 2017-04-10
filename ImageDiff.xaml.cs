@@ -40,12 +40,15 @@ namespace imgdiff
                 this.Pixels = new uint[w * h];
                 this.W = w;
                 this.H = h;
-                var bmp = new WriteableBitmap(this.W, this.H, 96, 96, PixelFormats.Bgra32, null);
-                this.ImageSource = bmp;
                 if (null != source)
                 {
-                    source.CopyPixels(this.Pixels, w*4, 0);
-                    bmp.WritePixels(new Int32Rect(0, 0, this.W, this.H), this.Pixels, this.W * 4, 0);
+                    this.ImageSource = source;
+                    source.CopyPixels(this.Pixels, w * 4, 0);
+                }
+                else
+                {
+                    var bmp = new WriteableBitmap(this.W, this.H, 96, 96, PixelFormats.Bgra32, null);
+                    this.ImageSource = bmp;
                 }
             }
 
@@ -95,7 +98,7 @@ namespace imgdiff
             {
                 if (x < 0 || x >= this.W || y < 0 || y >= this.H)
                 {
-                    return "out of range";
+                    return "...";
                 }
                 else
                 {
@@ -125,14 +128,14 @@ namespace imgdiff
                 uint diffB = Abs(B(a), B(b));
                 if (diffB > tolerance)
                 {
-                    diffColor |= 0xFF;
+                    diffColor |= 0xFF0000;
                 }
                 actualDiff |= diffB;
 
                 uint diffG = Abs(G(a), G(b));
                 if (diffG > tolerance)
                 {
-                    diffColor |= 0xFF00;
+                    diffColor |= 0xFF0000;
                 }
                 actualDiff |= diffG << 8;
 
@@ -193,7 +196,7 @@ namespace imgdiff
 
         protected override void OnPreviewKeyDown(KeyEventArgs e)
         {
-            if (e.Key == Key.Tab && e.IsDown && !e.IsRepeat && (Keyboard.GetKeyStates(Key.LeftCtrl) == KeyStates.Down))
+            if (e.Key == Key.Tab && e.IsDown && !e.IsRepeat)
             {
                 e.Handled = true;
                 if (this.mainImageType == MainImageType.LEFT)
@@ -238,21 +241,21 @@ namespace imgdiff
             switch(type)
             {
                 case MainImageType.LEFT:
-                    this.mainImage.Source = this.leftImage.ImageSource;
+                    this.mainImage.Source = (null == this.leftImage) ? null : this.leftImage.ImageSource;
                     this.leftButton.BorderBrush = selected;
                     this.rightButton.BorderBrush = unselected;
                     this.diffButton.BorderBrush = unselected;
                     break;
 
                 case MainImageType.RIGHT:
-                    this.mainImage.Source = this.rightImage.ImageSource;
+                    this.mainImage.Source = (null == this.rightImage) ? null : this.rightImage.ImageSource;
                     this.leftButton.BorderBrush = unselected;
                     this.rightButton.BorderBrush = selected;
                     this.diffButton.BorderBrush = unselected;
                     break;
 
                 default:
-                    this.mainImage.Source = this.diffImage.ImageSource;
+                    this.mainImage.Source = (null == this.diffImage) ? null : this.diffImage.ImageSource;
                     this.leftButton.BorderBrush = unselected;
                     this.rightButton.BorderBrush = unselected;
                     this.diffButton.BorderBrush = selected;
@@ -266,9 +269,9 @@ namespace imgdiff
             var pos = Mouse.GetPosition(this.mainImage);
             int x = (this.mainImage.ActualWidth <= 0) ? 0 : (int)(pos.X * this.mainImage.Source.Width / this.mainImage.ActualWidth);
             int y = (this.mainImage.ActualHeight <= 0) ? 0 : (int)(pos.Y * this.mainImage.Source.Height / this.mainImage.ActualHeight);
-            this.leftPixelValueText.Text = this.leftImage.GetPixelValueText(x, y);
-            this.rightPixelValueText.Text = this.rightImage.GetPixelValueText(x, y);
-            this.diffPixelValueText.Text = this.diffImage.GetPixelValueText(x, y);
+            this.leftPixelValueText.Text  = (null == this.leftImage) ? string.Empty : this.leftImage.GetPixelValueText(x, y);
+            this.rightPixelValueText.Text = (null == this.rightImage) ? string.Empty : this.rightImage.GetPixelValueText(x, y);
+            this.diffPixelValueText.Text  = (null == this.diffImage) ? string.Empty : this.diffImage.GetPixelValueText(x, y);
             this.cursorPositionTextBlock.Text = string.Format("[{0,-3}, {1,-3}]", x, y);
         }
 

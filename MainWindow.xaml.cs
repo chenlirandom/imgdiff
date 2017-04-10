@@ -49,10 +49,14 @@ namespace imgdiff
                 return;
             }
 
-            var leftImage = OpenImageFile(this.leftFile);
+            // Load image files
+            var leftTask = Task.Factory.StartNew<BitmapImage>(() => OpenImageFile(this.leftFile));
+            var rightTask = Task.Factory.StartNew<BitmapImage>(() => OpenImageFile(this.rightFile));
+            leftTask.Wait();
+            rightTask.Wait();
+            var leftImage = leftTask.Result;
+            var rightImage = rightTask.Result;
             if (null == leftImage) return;
-
-            var rightImage = OpenImageFile(this.rightFile);
             if (null == rightImage) return;
 
             this.imageDiff.SetImages(leftImage, rightImage, this.tolerance);
@@ -67,7 +71,13 @@ namespace imgdiff
             }
             try
             {
-                return new BitmapImage(new Uri(Path.GetFullPath(path)));
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.UriSource = new Uri(Path.GetFullPath(path));
+                image.EndInit();
+                image.Freeze(); // freeze it. So it can be passes safely across threads.
+                return image;
             }
             catch(Exception ex)
             {
