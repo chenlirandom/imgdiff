@@ -8,9 +8,9 @@
              d:DesignHeight="720" d:DesignWidth="1280" FontFamily="Consolas">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="7*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="3*"/>
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0">
             <ToolBarTray DockPanel.Dock="Bottom">
@@ -29,7 +29,7 @@
                 <ColumnDefinition/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="0" Click="Button_Click" x:Name="leftButton" BorderThickness="4">
+            <Button VerticalAlignment="Stretch" HorizontalAlignment="Right" Grid.Column="0" Click="Button_Click" x:Name="leftButton" BorderThickness="4">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -49,7 +49,7 @@
                     <Image x:Name="diffThumbnail" Source="blank.png" Stretch="Uniform" Grid.Row="1"/>
                 </Grid>
             </Button>
-            <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="2" Click="Button_Click" x:Name="rightButton" BorderThickness="4">
+            <Button VerticalAlignment="Stretch" HorizontalAlignment="Left" Grid.Column="2" Click="Button_Click" x:Name="rightButton" BorderThickness="4">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>

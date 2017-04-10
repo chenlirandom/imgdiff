@@ -20,13 +20,18 @@ namespace imgdiff
     /// </summary>
     public partial class MainWindow : Window
     {
-        int tolerance = 10;
+        int tolerance = 0;
         string leftFile = null;
         string rightFile = null;
 
         public MainWindow()
         {
             InitializeComponent();
+            int tol;
+            if (int.TryParse(Environment.GetEnvironmentVariable("IMAGE_DIFF_DEFAULT_TOLERANCE"), out tol))
+            {
+                this.tolerance = Math.Max(0, Math.Min(255, tol));
+            }
             this.Loaded += (s, e) => { Startup(); };
         }
 
@@ -53,20 +58,20 @@ namespace imgdiff
             this.imageDiff.SetImages(leftImage, rightImage, this.tolerance);
         }
 
-        BitmapImage OpenImageFile(string leftFile)
+        BitmapImage OpenImageFile(string path)
         {
-            if (!File.Exists(leftFile))
+            if (!File.Exists(path))
             {
-                ErrorLogLine(string.Format("File not found: {0}", leftFile));
+                ErrorLogLine(string.Format("File not found: {0}", path));
                 return null;
             }
             try
             {
-                return new BitmapImage(new Uri(Path.GetFullPath(leftFile)));
+                return new BitmapImage(new Uri(Path.GetFullPath(path)));
             }
             catch(Exception ex)
             {
-                ErrorLogLine(string.Format("Fail to open file {0}: {1}", leftFile, ex.ToString()));
+                ErrorLogLine(string.Format("Fail to open file {0}: {1}", path, ex.ToString()));
                 return null;
             }
         }
@@ -141,7 +146,8 @@ namespace imgdiff
 Usage: [options] <left> <right>
 
 Options:
-    -t [0-255]  Set image diff tolerance. Default is 10.
+    -t [0-255]  Set image diff tolerance. Default is 0, or whatever defined
+                by environment variable IMAGE_DIFF_DEFAULT_TOLERANCE.
 ";
             ErrorLogLine(usage);
         }

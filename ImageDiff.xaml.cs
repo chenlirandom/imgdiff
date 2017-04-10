@@ -186,6 +186,7 @@ namespace imgdiff
             if (null != this.diffImage) this.diffImage.GenDiffComplete += DiffImage_GenDiffComplete;
             this.leftThumbnail.Source = this.leftImage.ImageSource;
             this.rightThumbnail.Source = this.rightImage.ImageSource;
+            this.diffThumbnail.Source = this.diffImage.ImageSource;
             SwitchMainImage(MainImageType.DIFF);
             RefreshDiffImage(tolerance);
         }
