@@ -191,6 +191,23 @@ namespace imgdiff
             RefreshDiffImage(tolerance);
         }
 
+        protected override void OnPreviewKeyDown(KeyEventArgs e)
+        {
+            if (e.Key == Key.Tab && e.IsDown && !e.IsRepeat && (Keyboard.GetKeyStates(Key.LeftCtrl) == KeyStates.Down))
+            {
+                e.Handled = true;
+                if (this.mainImageType == MainImageType.LEFT)
+                {
+                    SwitchMainImage(MainImageType.RIGHT);
+                }
+                else
+                {
+                    SwitchMainImage(MainImageType.LEFT);
+                }
+            }
+            base.OnPreviewKeyDown(e);
+        }
+
         void RefreshDiffImage(int tolerance)
         {
             if (null == this.leftImage || null == this.rightImage) return;
