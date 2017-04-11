@@ -25,7 +25,7 @@ namespace imgdiff
     {
         class Bgra32Image
         {
-            Task genDiffTask;
+            //Task genDiffTask;
 
             public ImageSource ImageSource { get; private set; }
             public uint[] Pixels { get; private set; }
@@ -60,6 +60,46 @@ namespace imgdiff
                 if (tolerance < 0) tolerance = 0;
                 if (tolerance > 255) tolerance = 255;
 
+#if true
+                uint numCpuCores = 8; // TODO: get actual number of cores/processors
+                Debug.Assert(this.ImageSource is WriteableBitmap);
+                var bmp = this.ImageSource as WriteableBitmap;
+                bmp.Lock();
+                long stride = bmp.BackBufferStride;
+                bool strideEqualsWidth = (this.W * 4 == stride);
+                long buffer = (long)bmp.BackBuffer;
+                Parallel.For(0, numCpuCores, core =>
+                {
+                    long start = a.Pixels.Length * core / numCpuCores;
+                    long end = a.Pixels.Length * (core + 1) / numCpuCores;
+                    for (long i = start; i < end; ++i)
+                    {
+                        uint actualDiff, diffColor;
+                        GetDiff(out actualDiff, out diffColor, a.Pixels[i], b.Pixels[i], tolerance);
+                        this.Pixels[i] = actualDiff;
+                        if (strideEqualsWidth)
+                        {
+                            unsafe
+                            {
+                                ((uint*)buffer)[i] = diffColor;
+                            }
+                        }
+                        else
+                        {
+                            long x = i % this.W;
+                            long y = i / this.W;
+                            long ptr = buffer + y * stride + x * 4;
+                            unsafe
+                            {
+                                *(uint*)ptr = diffColor;
+                            }
+                        }
+                    }
+                });
+                bmp.AddDirtyRect(new Int32Rect(0, 0, this.W, this.H));
+                bmp.Unlock();
+                this.GenDiffComplete(this, tolerance);
+#else
                 // create a new diff task
                 Task task = null;
                 task = new Task((object state) =>
@@ -67,17 +107,23 @@ namespace imgdiff
                     uint[] diff   = new uint[this.Pixels.Length];
                     uint[] color = new uint[this.Pixels.Length];
                     int taskTolerance = (int)state;
-                    for (int i = 0; i < a.Pixels.Length; ++i)
+                    uint numCpuCores = 8; // TODO: get actual number of core
+                    Parallel.For(0, numCpuCores, core => 
                     {
-                        if (task != this.genDiffTask)
+                        long start = a.Pixels.Length * core / numCpuCores;
+                        long end = a.Pixels.Length * (core + 1) / numCpuCores;
+                        for (long i = start; i < end; ++i)
                         {
-                            return;
+                            if (task != this.genDiffTask)
+                            {
+                                return;
+                            }
+                            uint actualDiff, diffColor;
+                            GetDiff(out actualDiff, out diffColor, a.Pixels[i], b.Pixels[i], taskTolerance);
+                            diff[i] = actualDiff;
+                            color[i] = diffColor;
                         }
-                        uint actualDiff, diffColor;
-                        GetDiff(out actualDiff, out diffColor, a.Pixels[i], b.Pixels[i], taskTolerance);
-                        diff[i] = actualDiff;
-                        color[i] = diffColor;
-                    }
+                    });
                     Application.Current.Dispatcher.BeginInvoke((Action)(() => 
                     {
                         if (this.genDiffTask == task)
@@ -92,6 +138,7 @@ namespace imgdiff
                 }, tolerance);
                 this.genDiffTask = task;
                 task.Start();
+#endif
             }
 
             public string GetPixelValueText(int x, int y)
@@ -242,23 +289,23 @@ namespace imgdiff
             {
                 case MainImageType.LEFT:
                     this.mainImage.Source = (null == this.leftImage) ? null : this.leftImage.ImageSource;
-                    this.leftButton.BorderBrush = selected;
-                    this.rightButton.BorderBrush = unselected;
-                    this.diffButton.BorderBrush = unselected;
+                    this.leftBorder.BorderBrush = selected;
+                    this.rightBorder.BorderBrush = unselected;
+                    this.diffBorder.BorderBrush = unselected;
                     break;
 
                 case MainImageType.RIGHT:
                     this.mainImage.Source = (null == this.rightImage) ? null : this.rightImage.ImageSource;
-                    this.leftButton.BorderBrush = unselected;
-                    this.rightButton.BorderBrush = selected;
-                    this.diffButton.BorderBrush = unselected;
+                    this.leftBorder.BorderBrush = unselected;
+                    this.rightBorder.BorderBrush = selected;
+                    this.diffBorder.BorderBrush = unselected;
                     break;
 
                 default:
                     this.mainImage.Source = (null == this.diffImage) ? null : this.diffImage.ImageSource;
-                    this.leftButton.BorderBrush = unselected;
-                    this.rightButton.BorderBrush = unselected;
-                    this.diffButton.BorderBrush = selected;
+                    this.leftBorder.BorderBrush = unselected;
+                    this.rightBorder.BorderBrush = unselected;
+                    this.diffBorder.BorderBrush = selected;
                     break;
             }
             this.mainImageType = type;

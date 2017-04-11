@@ -19,9 +19,9 @@
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <TextBlock Text="xxx" x:Name="toleranceTextBlock" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Column="0" HorizontalAlignment="Right" Text="[X, Y]" x:Name="cursorPositionTextBlock"/>
         <Slider Grid.Column="1" Orientation="Horizontal" x:Name="toleranceSlider" Width="512" Minimum="0" Maximum="255" ValueChanged="Slider_ValueChanged" IsMoveToPointEnabled="True"/>
-        <TextBlock Grid.Column="2" HorizontalAlignment="Left" Text="[X, Y]" x:Name="cursorPositionTextBlock"/>
+        <TextBlock Grid.Column="2" Text="xxx" x:Name="toleranceTextBlock" HorizontalAlignment="Left"/>
       </Grid>
       <Image x:Name="mainImage" Stretch="Uniform"/>
     </DockPanel>
@@ -32,34 +32,40 @@
         <ColumnDefinition/>
         <ColumnDefinition/>
       </Grid.ColumnDefinitions>
-      <Button VerticalAlignment="Stretch" HorizontalAlignment="Right" Grid.Column="0" Click="Button_Click" x:Name="leftButton" BorderThickness="4">
+      <Button VerticalAlignment="Stretch" HorizontalAlignment="Right" Grid.Column="0" Click="Button_Click" x:Name="leftButton">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
           </Grid.RowDefinitions>
           <TextBlock x:Name="leftPixelValueText" HorizontalAlignment="Center"/>
-          <Image x:Name="leftThumbnail" Source="blank.png" Stretch="Uniform" Grid.Row="1"/>
+          <Border BorderThickness="4" Grid.Row="1" x:Name="leftBorder">
+            <Image x:Name="leftThumbnail" Source="blank.png" Stretch="Uniform"/>
+          </Border>
         </Grid>
       </Button>
-      <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="1" Click="Button_Click" x:Name="diffButton" BorderThickness="4">
+      <Button VerticalAlignment="Stretch" HorizontalAlignment="Center" Grid.Column="1" Click="Button_Click" x:Name="diffButton">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
           </Grid.RowDefinitions>
           <TextBlock x:Name="diffPixelValueText" HorizontalAlignment="Center"/>
-          <Image x:Name="diffThumbnail" Source="blank.png" Stretch="Uniform" Grid.Row="1"/>
+          <Border BorderThickness="4" Grid.Row="1" x:Name="diffBorder">
+            <Image x:Name="diffThumbnail" Source="blank.png" Stretch="Uniform"/>
+          </Border>
         </Grid>
       </Button>
-      <Button VerticalAlignment="Stretch" HorizontalAlignment="Left" Grid.Column="2" Click="Button_Click" x:Name="rightButton" BorderThickness="4">
+      <Button VerticalAlignment="Stretch" HorizontalAlignment="Left" Grid.Column="2" Click="Button_Click" x:Name="rightButton">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
           </Grid.RowDefinitions>
           <TextBlock x:Name="rightPixelValueText" HorizontalAlignment="Center"/>
-          <Image x:Name="rightThumbnail" Source="blank.png" Stretch="Uniform" Grid.Row="1"/>
+          <Border BorderThickness="4" Grid.Row="1" x:Name="rightBorder">
+            <Image x:Name="rightThumbnail" Source="blank.png" Stretch="Uniform"/>
+          </Border>
         </Grid>
       </Button>
     </Grid>
